@@ -141,7 +141,7 @@ export function aggregateAllianceSeatCounts(results: Result[]): AllianceSeatCoun
 
     return {
       allianceId,
-      allianceName: allianceInfo.shortName,
+      allianceName: allianceInfo.name,
       allianceColor: allianceInfo.color,
       seats: totalSeats,
       leadingSeats: totalLeading,

@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react';
 import type { ElectionSummary, SeatCount, AllianceSeatCount } from '@/types';
 import { ELECTION_CONFIG } from '@/lib/constants';
 import { formatNumber, formatPercentage, getRelativeTime } from '@/lib/utils';
-import SeatCounter from './SeatCounter';
+import ParliamentSeats from './ParliamentSeats';
 
 interface Props {
   summary: ElectionSummary;
@@ -15,7 +15,12 @@ interface Props {
 export default function ResultsSummary({ summary, seatCounts, allianceSeatCounts }: Props) {
   const [showAll, setShowAll] = useState(false);
   const [expandedAlliances, setExpandedAlliances] = useState<Set<string>>(new Set());
-  const { TOTAL_SEATS, MAJORITY_SEATS } = ELECTION_CONFIG;
+  const { TOTAL_SEATS } = ELECTION_CONFIG;
+
+  // Sort alliances by percentage (highest first)
+  const sortedAlliances = useMemo(() => {
+    return [...allianceSeatCounts].sort((a, b) => b.votePercentage - a.votePercentage);
+  }, [allianceSeatCounts]);
 
   const toggleAllianceExpanded = (allianceId: string) => {
     setExpandedAlliances(prev => {
@@ -32,10 +37,9 @@ export default function ResultsSummary({ summary, seatCounts, allianceSeatCounts
   return (
     <div className="space-y-6 fade-in">
       {/* Key metrics row with gradient cards */}
-      <div className="grid grid-cols-2 gap-3 sm:gap-4 sm:grid-cols-4">
+      <div className="grid grid-cols-1 gap-3 sm:gap-4 sm:grid-cols-3">
         <MetricCard label="Total Seats" value={TOTAL_SEATS} icon="📊" />
         <MetricCard label="Declared" value={summary.declaredSeats} accent icon="✅" />
-        <MetricCard label="Majority" value={MAJORITY_SEATS} icon="🎯" />
         <MetricCard
           label="Avg. Turnout"
           value={formatPercentage(summary.averageTurnout)}
@@ -43,13 +47,95 @@ export default function ResultsSummary({ summary, seatCounts, allianceSeatCounts
         />
       </div>
 
-      {/* Seat counter bar */}
-      <SeatCounter seatCounts={seatCounts} declaredSeats={summary.declaredSeats} showAll={showAll} />
+      {/* Leading Alliance Announcement */}
+      {sortedAlliances.length > 0 && summary.declaredSeats > 0 && (
+        <div className="relative overflow-hidden rounded-2xl border-2 border-gray-200 dark:border-slate-700 bg-gradient-to-br from-white via-gray-50 to-white dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 p-6 sm:p-8 shadow-lg">
+          {/* Background accent */}
+          <div 
+            className="absolute -top-24 -right-24 w-64 h-64 rounded-full blur-3xl opacity-10"
+            style={{ backgroundColor: sortedAlliances[0].allianceColor }}
+          />
+          
+          <div className="relative z-10">
+            <div className="flex items-center gap-2 mb-3">
+              <div 
+                className="w-2 h-2 rounded-full animate-pulse"
+                style={{ backgroundColor: sortedAlliances[0].allianceColor }}
+              />
+              <span className="text-xs font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-400">
+                Current Leading Alliance
+              </span>
+            </div>
+            
+            <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+              <div>
+                <h3 
+                  className="text-3xl sm:text-4xl font-black mb-2"
+                  style={{ color: sortedAlliances[0].allianceColor }}
+                >
+                  {sortedAlliances[0].allianceName}
+                </h3>
+                <p className="text-gray-700 dark:text-gray-300 text-sm sm:text-base font-medium">
+                  Leading with <span className="font-bold text-gray-900 dark:text-gray-100">{sortedAlliances[0].seats} seats</span> and{' '}
+                  <span className="font-bold" style={{ color: sortedAlliances[0].allianceColor }}>
+                    {formatPercentage(sortedAlliances[0].votePercentage)}
+                  </span> of votes
+                </p>
+              </div>
+              
+              <div className="flex items-center gap-6">
+                <div className="text-center">
+                  <div className="text-3xl sm:text-4xl font-black text-gray-900 dark:text-gray-100">
+                    {sortedAlliances[0].seats}
+                  </div>
+                  <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+                    Seats
+                  </div>
+                </div>
+                <div className="text-center">
+                  <div 
+                    className="text-3xl sm:text-4xl font-black"
+                    style={{ color: sortedAlliances[0].allianceColor }}
+                  >
+                    {formatPercentage(sortedAlliances[0].votePercentage)}
+                  </div>
+                  <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+                    Votes
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            {/* Progress indicator */}
+            <div className="mt-6">
+              <div className="flex justify-between text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">
+                <span>Progress to Victory</span>
+                <span>{sortedAlliances[0].seats}/{TOTAL_SEATS} ({formatPercentage((sortedAlliances[0].seats / TOTAL_SEATS) * 100)})</span>
+              </div>
+              <div className="relative h-3 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-slate-700">
+                <div
+                  className="absolute inset-y-0 left-0 rounded-full transition-all duration-1000 ease-out"
+                  style={{
+                    width: `${(sortedAlliances[0].seats / TOTAL_SEATS) * 100}%`,
+                    backgroundColor: sortedAlliances[0].allianceColor,
+                  }}
+                >
+                  <div className="absolute inset-0 bg-white/20 animate-pulse" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Parliament visualization */}
+      <ParliamentSeats allianceSeatCounts={sortedAlliances} totalSeats={summary.declaredSeats} />
 
       {/* Alliance highlight cards with enhanced design */}
       <div className="grid grid-cols-1 gap-4">
-        {allianceSeatCounts.map((alliance) => {
+        {sortedAlliances.map((alliance) => {
           const isExpanded = expandedAlliances.has(alliance.allianceId);
+          const progressPercentage = (alliance.seats / TOTAL_SEATS) * 100;
           return (
             <div
               key={alliance.allianceId}
@@ -73,9 +159,27 @@ export default function ResultsSummary({ summary, seatCounts, allianceSeatCounts
                   </span>
                   <span className="text-3xl sm:text-4xl font-black text-gray-900 dark:text-gray-100">{alliance.seats}</span>
                 </div>
+                
+                {/* Progress bar showing seats out of 300 */}
+                <div className="mb-3">
+                  <div className="flex items-center justify-between text-xs text-gray-600 dark:text-gray-400 mb-1.5">
+                    <span className="font-medium">{alliance.seats}/{TOTAL_SEATS} seats</span>
+                    <span className="font-semibold" style={{ color: alliance.allianceColor }}>{formatPercentage(progressPercentage)}</span>
+                  </div>
+                  <div className="relative h-2 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-slate-700">
+                    <div
+                      className="absolute inset-y-0 left-0 rounded-full transition-all duration-500"
+                      style={{
+                        width: `${progressPercentage}%`,
+                        backgroundColor: alliance.allianceColor,
+                      }}
+                    />
+                  </div>
+                </div>
+                
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-0 text-xs text-gray-600 dark:text-gray-400">
                   <span className="font-medium">{formatNumber(alliance.totalVotes)} votes</span>
-                  <span className="font-semibold" style={{ color: alliance.allianceColor }}>{formatPercentage(alliance.votePercentage)}</span>
+                  <span className="font-semibold" style={{ color: alliance.allianceColor }}>{formatPercentage(alliance.votePercentage)} of votes</span>
                 </div>
                 {alliance.leadingSeats > 0 && (
                   <div className="mt-3 inline-flex items-center gap-1.5 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg px-3 py-1.5">

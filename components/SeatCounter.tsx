@@ -20,12 +20,12 @@ export default function SeatCounter({ seatCounts, declaredSeats, showAll = false
       <div className="mb-3 flex items-center justify-between">
         <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Seat Count</h2>
         <span className="text-xs text-gray-500 dark:text-gray-400">
-          {declaredSeats}/{TOTAL_SEATS} declared &middot; {MAJORITY_SEATS} for majority
+          {declaredSeats}/{TOTAL_SEATS} declared
         </span>
       </div>
 
-      {/* Majority bar */}
-      <div className="relative mb-4 h-6 w-full overflow-hidden rounded-full bg-gray-100">
+      {/* Seat bar (no majority line) */}
+      <div className="relative mb-4 h-6 w-full overflow-hidden rounded-full bg-gray-100 dark:bg-slate-800">
         {/* Stacked bar per party */}
         {seatCounts.reduce<{ elements: React.ReactNode[]; offset: number }>(
           (acc, sc) => {
@@ -47,12 +47,6 @@ export default function SeatCounter({ seatCounts, declaredSeats, showAll = false
           },
           { elements: [], offset: 0 }
         ).elements}
-        {/* Majority marker */}
-        <div
-          className="absolute inset-y-0 w-0.5 bg-gray-800"
-          style={{ left: `${(MAJORITY_SEATS / TOTAL_SEATS) * 100}%` }}
-          title={`Majority: ${MAJORITY_SEATS}`}
-        />
       </div>
 
       {/* Party rows */}
