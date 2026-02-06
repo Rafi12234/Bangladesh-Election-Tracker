@@ -207,3 +207,12 @@ input:focus, select:focus, textarea:focus {
   border: 1px solid rgba(51, 65, 85, 0.3);
 }
 
+/* Hide scrollbar utility */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}

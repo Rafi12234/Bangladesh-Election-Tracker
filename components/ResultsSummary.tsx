@@ -20,80 +20,113 @@ export default function ResultsSummary({ summary, seatCounts }: Props) {
 
   return (
     <div className="space-y-6 fade-in">
-      {/* Key metrics row */}
+      {/* Key metrics row with gradient cards */}
       <div className="grid grid-cols-2 gap-3 sm:gap-4 sm:grid-cols-4">
-        <MetricCard label="Total Seats" value={TOTAL_SEATS} />
-        <MetricCard label="Declared" value={summary.declaredSeats} accent />
-        <MetricCard label="Majority" value={MAJORITY_SEATS} />
+        <MetricCard label="Total Seats" value={TOTAL_SEATS} icon="📊" />
+        <MetricCard label="Declared" value={summary.declaredSeats} accent icon="✅" />
+        <MetricCard label="Majority" value={MAJORITY_SEATS} icon="🎯" />
         <MetricCard
           label="Avg. Turnout"
           value={formatPercentage(summary.averageTurnout)}
+          icon="📈"
         />
       </div>
 
       {/* Seat counter bar */}
       <SeatCounter seatCounts={seatCounts} declaredSeats={summary.declaredSeats} showAll={showAll} />
 
-      {/* Top 2 party highlight cards */}
+      {/* Top 2 party highlight cards with enhanced design */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        {top2.map(sc => (
+        {top2.map((sc, idx) => (
           <div
             key={sc.partyId}
-            className="result-card rounded-xl border-l-4 bg-white dark:bg-slate-900 p-4 shadow-soft hover:shadow-soft-lg"
-            style={{ borderLeftColor: sc.partyColor }}
+            className="group relative overflow-hidden rounded-2xl border border-gray-200/50 dark:border-slate-700/50 bg-gradient-to-br from-white to-gray-50/50 dark:from-slate-900 dark:to-slate-900/50 p-5 sm:p-6 transition-all duration-300 hover:shadow-xl hover:-translate-y-1"
+            style={{
+              borderLeftWidth: '4px',
+              borderLeftColor: sc.partyColor,
+            }}
           >
-            <div className="flex items-center justify-between">
-              <span className="text-base sm:text-lg font-bold" style={{ color: sc.partyColor }}>
-                {sc.partyName}
-              </span>
-              <span className="text-xl sm:text-2xl font-black text-gray-900 dark:text-gray-100">{sc.seats}</span>
+            {/* Background gradient accent */}
+            <div 
+              className="absolute top-0 right-0 w-32 h-32 rounded-full blur-3xl opacity-5 group-hover:opacity-10 transition-opacity"
+              style={{ backgroundColor: sc.partyColor }}
+            />
+            
+            {/* Ranking badge */}
+            <div className="absolute top-3 right-3 bg-gray-100 dark:bg-slate-800 rounded-full px-2.5 py-1 text-xs font-bold text-gray-600 dark:text-gray-400">
+              #{idx + 1}
             </div>
-            <div className="mt-1 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-0.5 sm:gap-0 text-xs text-gray-500 dark:text-gray-400">
-              <span>{formatNumber(sc.totalVotes)} votes ({formatPercentage(sc.votePercentage)})</span>
-              {sc.leadingSeats > 0 && <span>+{sc.leadingSeats} leading</span>}
+            
+            <div className="relative">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-lg sm:text-xl font-extrabold tracking-tight" style={{ color: sc.partyColor }}>
+                  {sc.partyName}
+                </span>
+                <span className="text-3xl sm:text-4xl font-black text-gray-900 dark:text-gray-100">{sc.seats}</span>
+              </div>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-0 text-xs text-gray-600 dark:text-gray-400">
+                <span className="font-medium">{formatNumber(sc.totalVotes)} votes</span>
+                <span className="font-semibold" style={{ color: sc.partyColor }}>{formatPercentage(sc.votePercentage)}</span>
+              </div>
+              {sc.leadingSeats > 0 && (
+                <div className="mt-3 inline-flex items-center gap-1.5 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg px-3 py-1.5">
+                  <span className="text-amber-500 text-sm">⚡</span>
+                  <span className="text-xs font-bold text-amber-700 dark:text-amber-400">+{sc.leadingSeats} Leading</span>
+                </div>
+              )}
             </div>
           </div>
         ))}
       </div>
 
-      {/* Expand all parties */}
+      {/* Expand all parties button */}
       {seatCounts.length > 2 && (
         <button
           onClick={() => setShowAll(prev => !prev)}
-          className="w-full rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-3 text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-800 transition-all duration-200 shadow-sm hover:shadow-soft">
+          className="group w-full rounded-xl border border-gray-200 dark:border-slate-700 bg-gradient-to-r from-white to-gray-50 dark:from-slate-900 dark:to-slate-800 px-4 py-3.5 text-sm font-semibold text-gray-700 dark:text-gray-200 hover:from-gray-50 hover:to-gray-100 dark:hover:from-slate-800 dark:hover:to-slate-700 transition-all duration-300 shadow-sm hover:shadow-md flex items-center justify-center gap-2"
         >
-          {showAll ? 'Show Top 2 Only' : `Show All ${seatCounts.length} Parties`}
+          <span>{showAll ? 'Show Top 2 Only' : `Show All ${seatCounts.length} Parties`}</span>
+          <svg 
+            className={`h-4 w-4 transition-transform duration-300 ${showAll ? 'rotate-180' : ''}`} 
+            fill="none" 
+            stroke="currentColor" 
+            viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+          </svg>
         </button>
       )}
 
       {/* All parties table (expandable) */}
       {showAll && (
-        <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-soft">
-          <table className="w-full text-left text-xs sm:text-sm">
-            <thead className="border-b bg-gray-50 dark:bg-slate-800 text-[10px] sm:text-xs text-gray-500 dark:text-gray-400">
-              <tr>
-                <th className="px-2 sm:px-3 py-2">Party</th>
-                <th className="px-2 sm:px-3 py-2 text-right">Won</th>
-                <th className="px-2 sm:px-3 py-2 text-right hidden sm:table-cell">Leading</th>
-                <th className="px-2 sm:px-3 py-2 text-right">Votes</th>
-                <th className="px-2 sm:px-3 py-2 text-right hidden md:table-cell">Vote %</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100 dark:divide-slate-800">
-              {seatCounts.map(sc => (
-                <tr key={sc.partyId} className="hover:bg-gray-50 dark:hover:bg-slate-800/50 transition-colors">
-                  <td className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-2">
-                    <span className="h-2 w-2 sm:h-2.5 sm:w-2.5 flex-shrink-0 rounded-full" style={{ backgroundColor: sc.partyColor }} />
-                    <span className="font-medium truncate">{sc.partyName}</span>
-                  </td>
-                  <td className="px-2 sm:px-3 py-2 text-right font-bold">{sc.seats}</td>
-                  <td className="px-2 sm:px-3 py-2 text-right text-gray-500 hidden sm:table-cell">{sc.leadingSeats}</td>
-                  <td className="px-2 sm:px-3 py-2 text-right">{formatNumber(sc.totalVotes)}</td>
-                  <td className="px-2 sm:px-3 py-2 text-right hidden md:table-cell">{formatPercentage(sc.votePercentage)}</td>
+        <div className="overflow-hidden rounded-2xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-xl animate-slide-up">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs sm:text-sm">
+              <thead className="border-b border-gray-200 dark:border-slate-700 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-slate-800 dark:to-slate-800/50 text-[10px] sm:text-xs text-gray-600 dark:text-gray-300 font-semibold">
+                <tr>
+                  <th className="px-3 sm:px-4 py-3 uppercase tracking-wider">Party</th>
+                  <th className="px-3 sm:px-4 py-3 text-right uppercase tracking-wider">Won</th>
+                  <th className="px-3 sm:px-4 py-3 text-right hidden sm:table-cell uppercase tracking-wider">Leading</th>
+                  <th className="px-3 sm:px-4 py-3 text-right uppercase tracking-wider">Votes</th>
+                  <th className="px-3 sm:px-4 py-3 text-right hidden md:table-cell uppercase tracking-wider">Vote %</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-gray-100 dark:divide-slate-800">
+                {seatCounts.map(sc => (
+                  <tr key={sc.partyId} className="hover:bg-gray-50/50 dark:hover:bg-slate-800/30 transition-colors group">
+                    <td className="flex items-center gap-2 sm:gap-2.5 px-3 sm:px-4 py-3">
+                      <span className="h-2.5 w-2.5 sm:h-3 sm:w-3 flex-shrink-0 rounded-full shadow-sm group-hover:scale-110 transition-transform" style={{ backgroundColor: sc.partyColor }} />
+                      <span className="font-semibold truncate text-gray-900 dark:text-gray-100">{sc.partyName}</span>
+                    </td>
+                    <td className="px-3 sm:px-4 py-3 text-right font-bold text-gray-900 dark:text-gray-100">{sc.seats}</td>
+                    <td className="px-3 sm:px-4 py-3 text-right text-gray-600 dark:text-gray-400 font-medium hidden sm:table-cell">{sc.leadingSeats}</td>
+                    <td className="px-3 sm:px-4 py-3 text-right font-medium text-gray-900 dark:text-gray-100">{formatNumber(sc.totalVotes)}</td>
+                    <td className="px-3 sm:px-4 py-3 text-right font-medium text-gray-600 dark:text-gray-400 hidden md:table-cell">{formatPercentage(sc.votePercentage)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
@@ -106,14 +139,20 @@ export default function ResultsSummary({ summary, seatCounts }: Props) {
 }
 
 function MetricCard({
-  label, value, accent,
+  label, value, accent, icon,
 }: {
-  label: string; value: string | number; accent?: boolean;
+  label: string; value: string | number; accent?: boolean; icon?: string;
 }) {
   return (
-    <div className="rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-3 sm:p-4 text-center shadow-soft hover:shadow-soft-lg transition-all duration-200">
-      <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 font-medium uppercase tracking-wide">{label}</p>
-      <p className={`text-base sm:text-2xl font-bold mt-1 ${accent ? 'text-bd-green dark:text-emerald-400' : 'text-gray-900 dark:text-gray-100'}`}>{value}</p>
+    <div className="group relative overflow-hidden rounded-2xl border border-gray-200/50 dark:border-slate-700/50 bg-gradient-to-br from-white via-gray-50/30 to-white dark:from-slate-900 dark:via-slate-900/50 dark:to-slate-900 p-4 sm:p-5 text-center transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
+      {/* Subtle gradient overlay */}
+      <div className="absolute inset-0 bg-gradient-to-br from-transparent via-transparent to-gray-100/20 dark:to-slate-800/20 opacity-0 group-hover:opacity-100 transition-opacity" />
+      
+      <div className="relative">
+        {icon && <div className="text-2xl mb-2 group-hover:scale-110 transition-transform">{icon}</div>}
+        <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 font-bold uppercase tracking-wider">{label}</p>
+        <p className={`text-xl sm:text-3xl font-black mt-2 ${accent ? 'text-bd-green dark:text-emerald-400' : 'text-gray-900 dark:text-gray-100'}`}>{value}</p>
+      </div>
     </div>
   );
 }
