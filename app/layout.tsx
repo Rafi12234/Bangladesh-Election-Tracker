@@ -13,6 +13,11 @@ export const metadata: Metadata = {
   description: 'Real-time election results and seat counting for Bangladesh parliamentary elections. Track constituency-level results with interactive maps.',
   keywords: ['Bangladesh', 'Election', 'Results', 'Live', 'Parliamentary', 'Constituency'],
   authors: [{ name: 'Bangladesh Election Commission' }],
+  icons: {
+    icon: '/logo.png?v=2',
+    shortcut: '/logo.png?v=2',
+    apple: '/logo.png?v=2',
+  },
   openGraph: {
     title: 'Bangladesh Election Tracker | Live Results',
     description: 'Real-time election results tracking with interactive maps',

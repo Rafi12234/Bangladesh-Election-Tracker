@@ -5,12 +5,70 @@ Built with Next.js, Firebase, Leaflet, and Tailwind CSS.
 
 ## Features
 
-- **Live Dashboard** — Total seats per party, popular vote %, real-time updates
-- **Interactive Map** — Leaflet + OpenStreetMap with constituency-level coloring
-- **Constituency Drill-down** — Candidate list, vote breakdown, margins, turnout
-- **Admin Panel** — Division → District → Constituency cascade selector with MCQ-style vote entry
-- **Real-time** — Firestore `onSnapshot` listeners push updates instantly
-- **Lightweight** — Lazy-loaded map, minimal dependencies, optimized bundles
+### 📊 Core Dashboard Features
+- **Live Results Display** with real-time updates and "LIVE" indicator
+- **Alliance Aggregation System** - 3 main groups (BNP-led, Jamaat-led, Others)
+- **60+ Political Parties** fully supported with auto-aggregation
+- **Seat Counter Visualization** - Horizontal stacked bar with majority line
+- **Expandable Alliance Cards** showing party-level breakdowns
+- **Key Metrics Display** - Total seats, declared, majority threshold, avg turnout
+- **Party Performance Table** - Seats won, leading, votes, percentages
+
+### 🗺️ Interactive Map
+- **Full-screen Leaflet Map** with pan and zoom controls
+- **Constituency-level Coloring** based on winner party
+- **Hover Tooltips** - Winner, votes, margin, turnout
+- **Click Navigation** to constituency detail pages
+- **Dynamic Updates** - Real-time color changes as results come in
+- **Status Indicators** - Full color (completed), 50% opacity (leading), gray (pending)
+
+### 📋 Constituency Features
+- **Searchable List** of all 300 constituencies
+- **Status Filters** - All, Completed, Partial, Pending
+- **Detailed Pages** - Full candidate list, vote breakdown, winner highlights
+- **Victory Margin & Turnout** statistics
+- **Alliance Context** display (e.g., "BNP (BNP Alliance)")
+
+### 👮 Admin Panel
+- **Secure Hidden Route** (`/admin9012`) with Firebase authentication
+- **3-tier Cascade Selector** - Division → District → Constituency
+- **All 60+ Parties** available for vote entry
+- **Independent Candidate** option
+- **MCQ-style Vote Entry** with real-time calculations
+- **Edit Existing Results** with overwrite warning
+- **Toggle Status** - Partial/Completed
+- **Auto-calculation** - Total votes, winner, margin, percentages
+
+### 🎨 UI/UX Features
+- **Dark Mode Support** with system preference detection
+- **Manual Theme Toggle** in header
+- **Modern Gradient Design** on cards and backgrounds
+- **Smooth Animations** - Hover effects, transitions, scale transforms
+- **Responsive Design** - Mobile-first approach for all screen sizes
+- **Loading States** - Skeletons and spinners
+- **Party Color Indicators** with symbols (emojis)
+
+### ⚡ Performance & Technical
+- **Real-time Updates** - Firestore `onSnapshot` listeners
+- **Lazy Loading** - Map component loaded on-demand
+- **Code Splitting** - Dynamic imports for optimization
+- **Pre-aggregated Data** - Server-side summary calculations
+- **Canvas Rendering** - Leaflet optimization for many features
+- **Efficient Queries** - Indexed Firestore reads
+
+### 🔐 Security
+- **Firebase Authentication** with email/password
+- **Admin Whitelist** in Firestore
+- **Role-based Access** (admin, data-entry)
+- **Audit Trail** - updatedBy tracking
+- **Protected Routes** with secure rules
+
+### 📊 Data Management
+- **60+ Registered Parties** with alliance assignments
+- **Alliance Definitions** - BNP-led (4 parties), Jamaat-led (4 parties), Others (50+)
+- **300 Constituencies** across 8 divisions and 64 districts
+- **Automatic Aggregation** - Party votes → Alliance totals
+- **GeoJSON Boundaries** for accurate mapping
 
 ## Tech Stack
 

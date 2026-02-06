@@ -16,7 +16,7 @@ export default function Header() {
           <div className="relative">
             <div className="absolute inset-0 bg-bd-green/10 dark:bg-emerald-400/10 rounded-xl blur-md group-hover:blur-lg transition-all" />
             <Image 
-              src="/bd-logo.png" 
+              src="/logo.png?v=2" 
               alt="BD Election Logo" 
               width={40} 
               height={40} 
