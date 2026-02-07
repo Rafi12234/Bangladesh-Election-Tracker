@@ -1,5 +1,7 @@
 // Type definitions for Bangladesh Election Tracker
 
+import { Timestamp } from 'firebase/firestore';
+
 // ============================================
 // Firestore Document Types
 // ============================================
@@ -13,6 +15,36 @@ export interface Party {
   order: number;  // Display order
   allianceId: string | null; // 'bnp', 'jamaat', or null for Others
   isIndependent: boolean; // true for independent candidates
+}
+
+// ============================================
+// News Article Types
+// ============================================
+
+export interface NewsArticle {
+  id?: string; // Firestore document ID
+  headline: string;
+  slug: string;
+  excerpt: string;
+  content: string;
+  coverImageUrl?: string;
+  sourceName?: string;
+  tags?: string[];
+  status: 'draft' | 'published';
+  publishedAt?: Timestamp;
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+  authorId: string;
+}
+
+export interface NewsArticleForm {
+  headline: string;
+  excerpt: string;
+  content: string;
+  coverImageUrl?: string;
+  sourceName?: string;
+  tags?: string[];
+  status: 'draft' | 'published';
 }
 
 export interface Division {

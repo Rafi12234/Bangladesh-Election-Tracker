@@ -37,7 +37,7 @@ export default function VoteBar({ entries }: { entries: Entry[] }) {
           <div className="mt-1.5 h-2 sm:h-2.5 w-full overflow-hidden rounded-full bg-gray-100 dark:bg-slate-800 shadow-inner">
             <div
               className="progress-bar h-full rounded-full transition-all duration-300 ease-out"
-              style={
+              style={{
                 width: `${(e.votes / maxVotes) * 100}%`,
                 backgroundColor: e.partyColor,
                 opacity: e.isWinner ? 1 : 0.75,

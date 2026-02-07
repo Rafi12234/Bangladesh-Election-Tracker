@@ -6,11 +6,14 @@
 import dynamic from 'next/dynamic';
 import { useEffect, useState } from 'react';
 import Header from '@/components/Header';
+import ElectionEditorialHeader from '@/components/ElectionEditorialHeader';
 import ResultsSummary from '@/components/ResultsSummary';
+import ElectionResultsBar from '@/components/ElectionResultsBar';
 import ConstituencyList from '@/components/ConstituencyList';
 import { PageLoader } from '@/components/LoadingSpinner';
 import { useParties, useResults, useSummary, useSeatCounts, useAllianceSeatCounts } from '@/hooks';
 import { getConstituencies } from '@/lib/firestore';
+import { UPCOMING_ELECTION } from '@/lib/constants';
 import type { Constituency } from '@/types';
 
 // Lazy-load map to reduce initial bundle
@@ -28,6 +31,32 @@ export default function HomePage() {
   const [constituencies, setConstituencies] = useState<Constituency[]>([]);
   const [consLoading, setConsLoading] = useState(true);
 
+  // Mock data for ElectionResultsBar - replace with real data later
+  const mockElectionData = {
+    left: {
+      partyName: "Bangladesh Nationalist Party",
+      shortName: "BNP",
+      leaderName: "Khaleda Zia",
+      seatCount: 127,
+      partyColor: "#E4002B",
+      logoUrl: "/bnp.png",
+      popularVotePct: 42.8,
+      popularVotes: 25640000
+    },
+    right: {
+      partyName: "Jamaat-e-Islami",
+      shortName: "Jamaat",
+      leaderName: "Dr. Shafiqur Rahman",
+      seatCount: 89,
+      partyColor: "#006400",
+      logoUrl: "/jamaat.png",
+      popularVotePct: 31.5,
+      popularVotes: 18920000
+    },
+    totalSeats: 300,
+    seatsToWin: 151
+  };
+
   useEffect(() => {
     getConstituencies()
       .then(setConstituencies)
@@ -40,6 +69,7 @@ export default function HomePage() {
   return (
     <>
       <Header />
+      <ElectionEditorialHeader data={UPCOMING_ELECTION} />
       <main className="mx-auto max-w-7xl px-3 sm:px-4 py-6 sm:py-8 md:py-10">
         {loading ? (
           <PageLoader />
@@ -47,6 +77,9 @@ export default function HomePage() {
           <div className="space-y-8">
             {/* Election summary + metrics */}
             <ResultsSummary summary={summary} seatCounts={seatCounts} allianceSeatCounts={allianceSeatCounts} />
+
+            {/* Election Results Comparison Bar */}
+            <ElectionResultsBar {...mockElectionData} />
 
             {/* Mini map preview */}
             <section>

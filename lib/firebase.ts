@@ -16,27 +16,29 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase (singleton pattern)
-let app: FirebaseApp;
-let db: Firestore;
-let auth: Auth;
+let firebaseApp: FirebaseApp;
+let firebaseDb: Firestore;
+let firebaseAuth: Auth;
 
 function initializeFirebase() {
   if (!getApps().length) {
-    app = initializeApp(firebaseConfig);
+    firebaseApp = initializeApp(firebaseConfig);
   } else {
-    app = getApps()[0];
+    firebaseApp = getApps()[0];
   }
   
-  db = getFirestore(app);
-  auth = getAuth(app);
+  firebaseDb = getFirestore(firebaseApp);
+  firebaseAuth = getAuth(firebaseApp);
   
-  return { app, db, auth };
+  return { app: firebaseApp, db: firebaseDb, auth: firebaseAuth };
 }
 
 // Initialize on module load
 const firebase = initializeFirebase();
 
 export { firebase };
-export const firebaseApp = firebase.app;
+export const app = firebase.app;
+export const db = firebase.db;
+export const auth = firebase.auth;
+// Keep legacy names for compatibility
 export const firestore = firebase.db;
-export const firebaseAuth = firebase.auth;

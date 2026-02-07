@@ -8,6 +8,16 @@ export const ELECTION_CONFIG = {
   ELECTION_DATE: '2026-01-XX', // Update with actual date
 } as const;
 
+// Election editorial header information
+export const UPCOMING_ELECTION = {
+  title: 'Bangladesh Parliamentary Election 2026',
+  description: 'Follow live results and updates from the 12th National Parliamentary Election of Bangladesh as the nation votes to shape its democratic future.',
+  dateLabel: 'January 7, 2026', // Update with actual date
+  type: 'Parliamentary Election',
+  country: 'Bangladesh',
+  status: 'upcoming' as const, // Change to 'live' or 'completed' as needed
+} as const;
+
 // Party colors for consistent styling
 export const PARTY_COLORS: Record<string, string> = {
   al: '#00A651',
