@@ -34,6 +34,7 @@ export default function Header() {
         <nav className="hidden absolute left-1/2 -translate-x-1/2 items-center gap-2 md:flex bg-gray-50/80 dark:bg-slate-800/80 rounded-full px-2 py-1.5 shadow-sm border border-gray-200/50 dark:border-slate-700/50">
           <NavLink href="/">Dashboard</NavLink>
           <NavLink href="/map">Map</NavLink>
+          <NavLink href="/news">News</NavLink>
         </nav>
 
         {/* Live indicator + Theme toggle + Mobile menu */}
@@ -70,6 +71,7 @@ export default function Header() {
         <nav className="border-t border-gray-100 dark:border-slate-700/50 bg-gray-50/95 dark:bg-slate-900/95 backdrop-blur-xl px-4 py-4 md:hidden space-y-1">
           <NavLink href="/" onClick={() => setMenuOpen(false)} mobile>Dashboard</NavLink>
           <NavLink href="/map" onClick={() => setMenuOpen(false)} mobile>Map</NavLink>
+          <NavLink href="/news" onClick={() => setMenuOpen(false)} mobile>News</NavLink>
         </nav>
       )}
     </header>

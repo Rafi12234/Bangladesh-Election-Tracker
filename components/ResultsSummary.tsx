@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { ChartBarIcon, CheckCircleIcon, ArrowTrendingUpIcon } from '@heroicons/react/24/outline';
 import type { ElectionSummary, SeatCount, AllianceSeatCount } from '@/types';
 import { ELECTION_CONFIG } from '@/lib/constants';
 import { formatNumber, formatPercentage, getRelativeTime } from '@/lib/utils';
@@ -38,12 +39,12 @@ export default function ResultsSummary({ summary, seatCounts, allianceSeatCounts
     <div className="space-y-6 fade-in">
       {/* Key metrics row with gradient cards */}
       <div className="grid grid-cols-1 gap-3 sm:gap-4 sm:grid-cols-3">
-        <MetricCard label="Total Seats" value={TOTAL_SEATS} icon="📊" />
-        <MetricCard label="Declared" value={summary.declaredSeats} accent icon="✅" />
+        <MetricCard label="Total Seats" value={TOTAL_SEATS} icon={<ChartBarIcon className="h-6 w-6" />} />
+        <MetricCard label="Declared" value={summary.declaredSeats} accent icon={<CheckCircleIcon className="h-6 w-6" />} />
         <MetricCard
           label="Avg. Turnout"
           value={formatPercentage(summary.averageTurnout)}
-          icon="📈"
+          icon={<ArrowTrendingUpIcon className="h-6 w-6" />}
         />
       </div>
 
@@ -306,7 +307,7 @@ export default function ResultsSummary({ summary, seatCounts, allianceSeatCounts
 function MetricCard({
   label, value, accent, icon,
 }: {
-  label: string; value: string | number; accent?: boolean; icon?: string;
+  label: string; value: string | number; accent?: boolean; icon?: React.ReactNode;
 }) {
   return (
     <div className="group relative overflow-hidden rounded-2xl border border-gray-200/50 dark:border-slate-700/50 bg-gradient-to-br from-white via-gray-50/30 to-white dark:from-slate-900 dark:via-slate-900/50 dark:to-slate-900 p-4 sm:p-5 text-center transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
@@ -314,7 +315,11 @@ function MetricCard({
       <div className="absolute inset-0 bg-gradient-to-br from-transparent via-transparent to-gray-100/20 dark:to-slate-800/20 opacity-0 group-hover:opacity-100 transition-opacity" />
       
       <div className="relative">
-        {icon && <div className="text-2xl mb-2 group-hover:scale-110 transition-transform">{icon}</div>}
+        {icon && (
+          <div className="flex justify-center mb-3 text-gray-600 dark:text-gray-400 group-hover:text-bd-green dark:group-hover:text-emerald-400 group-hover:scale-110 transition-all">
+            {icon}
+          </div>
+        )}
         <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 font-bold uppercase tracking-wider">{label}</p>
         <p className={`text-xl sm:text-3xl font-black mt-2 ${accent ? 'text-bd-green dark:text-emerald-400' : 'text-gray-900 dark:text-gray-100'}`}>{value}</p>
       </div>

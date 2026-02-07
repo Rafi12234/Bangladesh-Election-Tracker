@@ -45,6 +45,35 @@ service cloud.firestore {
       allow write: if false; // Managed via Firebase Console or Cloud Functions only
     }
 
+    // ─── News Articles — public read for published, admin write ───
+    match /news/{articleId} {
+      // Public can read only published articles
+      allow read: if resource.data.status == 'published';
+      
+      // Admin can create, update, and delete articles
+      allow create: if isAdmin() 
+        && request.resource.data.keys().hasAll(['headline', 'slug', 'excerpt', 'content', 'status', 'createdAt', 'updatedAt', 'authorId'])
+        && request.resource.data.headline is string
+        && request.resource.data.slug is string
+        && request.resource.data.excerpt is string
+        && request.resource.data.content is string
+        && request.resource.data.status in ['draft', 'published']
+        && request.resource.data.authorId == request.auth.uid;
+        
+      allow update: if isAdmin()
+        && request.resource.data.keys().hasAll(['headline', 'slug', 'excerpt', 'content', 'status', 'updatedAt', 'authorId'])
+        && request.resource.data.headline is string
+        && request.resource.data.slug is string
+        && request.resource.data.excerpt is string
+        && request.resource.data.content is string
+        && request.resource.data.status in ['draft', 'published'];
+        
+      allow delete: if isAdmin();
+      
+      // Admin can read all articles (including drafts)
+      allow read: if isAdmin();
+    }
+
     // ─── Deny everything else ───
     match /{document=**} {
       allow read, write: if false;

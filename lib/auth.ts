@@ -6,29 +6,29 @@ import {
   User,
 } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
-import { firebaseAuth, firestore } from './firebase';
+import { auth, firestore } from './firebase';
 import { COLLECTIONS } from './constants';
 import type { AdminUser } from '@/types';
 
 // Sign in with email and password
 export async function signIn(email: string, password: string): Promise<User> {
-  const result = await signInWithEmailAndPassword(firebaseAuth, email, password);
+  const result = await signInWithEmailAndPassword(auth, email, password);
   return result.user;
 }
 
 // Sign out
 export async function signOut(): Promise<void> {
-  await firebaseSignOut(firebaseAuth);
+  await firebaseSignOut(auth);
 }
 
 // Get current user
 export function getCurrentUser(): User | null {
-  return firebaseAuth.currentUser;
+  return auth.currentUser;
 }
 
 // Subscribe to auth state changes
 export function onAuthChange(callback: (user: User | null) => void): () => void {
-  return onAuthStateChanged(firebaseAuth, callback);
+  return onAuthStateChanged(auth, callback);
 }
 
 // Check if user is admin
