@@ -1,6 +1,6 @@
 'use client';
 
-/* Admin login form — lightweight, no external form lib */
+/* Admin login form — Firebase email/password authentication */
 
 import { useState, type FormEvent } from 'react';
 
@@ -13,11 +13,21 @@ interface Props {
 export default function AdminLogin({ onLogin, error, loading }: Props) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    onLogin(email, password);
+    setSubmitting(true);
+    try {
+      await onLogin(email, password);
+    } catch {
+      // error is handled by parent via useAuth hook
+    } finally {
+      setSubmitting(false);
+    }
   };
+
+  const isLoading = loading || submitting;
 
   return (
     <div className="flex min-h-[70vh] items-center justify-center px-4">
@@ -56,10 +66,10 @@ export default function AdminLogin({ onLogin, error, loading }: Props) {
 
         <button
           type="submit"
-          disabled={loading}
+          disabled={isLoading}
           className="w-full rounded-lg bg-bd-green dark:bg-emerald-600 px-4 py-3 text-sm font-semibold text-white hover:bg-bd-green/90 dark:hover:bg-emerald-500 disabled:opacity-60 disabled:cursor-not-allowed transition-all shadow-sm hover:shadow-md"
         >
-          {loading ? 'Signing in...' : 'Sign In'}
+          {isLoading ? 'Signing in...' : 'Sign In'}
         </button>
       </form>
     </div>

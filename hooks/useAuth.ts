@@ -4,7 +4,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { User } from 'firebase/auth';
-import { signIn, signOut, onAuthChange, isAdmin, getAdminUser } from '@/lib/auth';
+import { signIn, signOut, onAuthChange } from '@/lib/auth';
 import type { AdminUser } from '@/types';
 
 export function useAuth() {
@@ -14,29 +14,25 @@ export function useAuth() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const unsubscribe = onAuthChange(async (firebaseUser) => {
-      setLoading(true);
+    const unsubscribe = onAuthChange((firebaseUser) => {
       setError(null);
 
       if (firebaseUser) {
         setUser(firebaseUser);
-        
-        // Check if user is admin
-        const isAdminUser = await isAdmin(firebaseUser.uid);
-        if (isAdminUser) {
-          const admin = await getAdminUser(firebaseUser.uid);
-          setAdminUser(admin);
-        } else {
-          setError('You do not have admin access');
-          await signOut();
-          setUser(null);
-          setAdminUser(null);
-        }
+        // Build admin object instantly from Firebase Auth — no Firestore round-trip
+        setAdminUser({
+          uid: firebaseUser.uid,
+          email: firebaseUser.email || '',
+          displayName: firebaseUser.displayName || firebaseUser.email || 'Admin',
+          role: 'admin',
+          assignedDivisions: [],
+          createdAt: new Date(),
+        });
       } else {
         setUser(null);
         setAdminUser(null);
       }
-      
+
       setLoading(false);
     });
 
@@ -46,11 +42,20 @@ export function useAuth() {
   const login = useCallback(async (email: string, password: string) => {
     setLoading(true);
     setError(null);
-    
+
     try {
       await signIn(email, password);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Login failed');
+    } catch (err: any) {
+      const code = err?.code || '';
+      let message = 'Login failed. Please try again.';
+      if (code === 'auth/user-not-found' || code === 'auth/wrong-password' || code === 'auth/invalid-credential') {
+        message = 'Invalid email or password.';
+      } else if (code === 'auth/too-many-requests') {
+        message = 'Too many attempts. Please try again later.';
+      } else if (code === 'auth/invalid-email') {
+        message = 'Invalid email address.';
+      }
+      setError(message);
       setLoading(false);
       throw err;
     }
