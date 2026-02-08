@@ -31,18 +31,15 @@ import { aggregateAllianceSeatCounts } from '@/lib/alliances';
 // ============================================
 export function useParties() {
   const [parties, setParties] = useState<Party[]>(staticParties);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
     getParties()
-      .then(setParties)
+      .then(data => { if (data.length) setParties(data); })
       .catch(err => {
         console.error('Failed to fetch parties:', err);
-        // Use static parties as fallback
-        setParties(staticParties);
-      })
-      .finally(() => setLoading(false));
+      });
   }, []);
 
   return { parties, loading, error };
@@ -53,17 +50,11 @@ export function useParties() {
 // ============================================
 export function useResults() {
   const [results, setResults] = useState<Result[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
-    // Initial fetch
-    getResults()
-      .then(setResults)
-      .catch(setError)
-      .finally(() => setLoading(false));
-
-    // Real-time subscription
+    // Real-time subscription handles both initial load and updates
     const unsubscribe = subscribeToResults(setResults);
     return () => unsubscribe();
   }, []);
@@ -76,14 +67,10 @@ export function useResults() {
 // ============================================
 export function useSummary() {
   const [summary, setSummary] = useState<ElectionSummary | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    setLoading(true);
-    const unsubscribe = subscribeToSummary(data => {
-      setSummary(data);
-      setLoading(false);
-    });
+    const unsubscribe = subscribeToSummary(setSummary);
     return () => unsubscribe();
   }, []);
 
