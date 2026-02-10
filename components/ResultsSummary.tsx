@@ -68,9 +68,10 @@ export default function ResultsSummary({ summary, seatCounts, allianceSeatCounts
   return (
     <div className="space-y-6 fade-in">
       {/* Key metrics row with gradient cards */}
-      <div className="grid grid-cols-1 gap-3 sm:gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-3 sm:gap-4 sm:grid-cols-4">
         <MetricCard label="Total Seats" value={TOTAL_SEATS} icon={<ChartBarIcon className="h-6 w-6" />} />
         <MetricCard label="Declared" value={summary.declaredSeats} accent icon={<CheckCircleIcon className="h-6 w-6" />} />
+        <MetricCard label="Suspended" value={2} suspended icon={<svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" /></svg>} />
         <MetricCard
           label="Avg. Turnout"
           value={formatPercentage(summary.averageTurnout)}
@@ -413,9 +414,9 @@ export default function ResultsSummary({ summary, seatCounts, allianceSeatCounts
 }
 
 function MetricCard({
-  label, value, accent, icon,
+  label, value, accent, suspended, icon,
 }: {
-  label: string; value: string | number; accent?: boolean; icon?: React.ReactNode;
+  label: string; value: string | number; accent?: boolean; suspended?: boolean; icon?: React.ReactNode;
 }) {
   return (
     <div className="group relative overflow-hidden rounded-2xl border border-gray-200/50 dark:border-slate-700/50 bg-gradient-to-br from-white via-gray-50/30 to-white dark:from-slate-900 dark:via-slate-900/50 dark:to-slate-900 p-4 sm:p-5 text-center transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
@@ -424,12 +425,12 @@ function MetricCard({
       
       <div className="relative">
         {icon && (
-          <div className="flex justify-center mb-3 text-gray-600 dark:text-gray-400 group-hover:text-bd-green dark:group-hover:text-emerald-400 group-hover:scale-110 transition-all">
+          <div className={`flex justify-center mb-3 transition-all ${suspended ? 'text-red-500 dark:text-red-400 group-hover:text-red-600 dark:group-hover:text-red-300' : 'text-gray-600 dark:text-gray-400 group-hover:text-bd-green dark:group-hover:text-emerald-400'} group-hover:scale-110`}>
             {icon}
           </div>
         )}
         <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 font-bold uppercase tracking-wider">{label}</p>
-        <p className={`text-xl sm:text-3xl font-black mt-2 ${accent ? 'text-bd-green dark:text-emerald-400' : 'text-gray-900 dark:text-gray-100'}`}>{value}</p>
+        <p className={`text-xl sm:text-3xl font-black mt-2 ${accent ? 'text-bd-green dark:text-emerald-400' : suspended ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-gray-100'}`}>{value}</p>
       </div>
     </div>
   );

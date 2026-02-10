@@ -9,18 +9,40 @@ interface Props {
   totalSeats: number;
 }
 
+const UNDECLARED_COLOR = '#9CA3AF'; // gray-400 - better visibility in both light and dark modes
+
 export default function ParliamentSeats({ allianceSeatCounts, totalSeats }: Props) {
-  // Calculate angles for each alliance segment
+  // Calculate angles for each alliance segment + undeclared
   const segments = useMemo(() => {
-    // Filter out alliances with 0 seats to avoid NaN values
+    const TOTAL_PARLIAMENT_SEATS = 300;
+    const declaredSeats = totalSeats;
+    const undeclaredSeats = TOTAL_PARLIAMENT_SEATS - declaredSeats;
+    
+    // Filter out alliances with 0 seats
     const alliancesWithSeats = allianceSeatCounts.filter(a => a.seats > 0);
-    if (alliancesWithSeats.length === 0 || totalSeats === 0) return [];
+    
+    // Add undeclared segment if there are undeclared seats
+    const allSegments = [...alliancesWithSeats];
+    if (undeclaredSeats > 0) {
+      allSegments.push({
+        allianceId: 'undeclared',
+        allianceName: 'Undeclared',
+        allianceColor: UNDECLARED_COLOR,
+        seats: undeclaredSeats,
+        leadingSeats: 0,
+        totalVotes: 0,
+        votePercentage: 0,
+        parties: [],
+      });
+    }
+    
+    if (allSegments.length === 0) return [];
     
     let startAngle = -180; // Start from left (180 degrees in standard position)
     
-    return alliancesWithSeats.map(alliance => {
-      const percentage = (alliance.seats / totalSeats) * 100;
-      const sweepAngle = (alliance.seats / totalSeats) * 180; // 180 degrees for semicircle
+    return allSegments.map(alliance => {
+      const percentage = (alliance.seats / TOTAL_PARLIAMENT_SEATS) * 100;
+      const sweepAngle = (alliance.seats / TOTAL_PARLIAMENT_SEATS) * 180; // 180 degrees for semicircle
       
       // Calculate label position (OUTSIDE the donut, like the reference image)
       const midAngle = startAngle + (sweepAngle / 2);
@@ -98,8 +120,8 @@ export default function ParliamentSeats({ allianceSeatCounts, totalSeats }: Prop
                 <title>{`${segment.allianceName}: ${segment.seats} seats`}</title>
               </path>
               
-              {/* Alliance name and percentage outside (only show if seats > 0) */}
-              {segment.seats > 0 && !isNaN(segment.percentage) && (
+              {/* Alliance name and seats outside (only show if seats > 0) */}
+              {segment.seats > 0 && (
                 <text
                   x={segment.labelX + 100}
                   y={segment.labelY + 30}
@@ -107,7 +129,10 @@ export default function ParliamentSeats({ allianceSeatCounts, totalSeats }: Prop
                   className="fill-gray-800 dark:fill-gray-200 font-semibold pointer-events-none select-none"
                   style={{ fontSize: '15px', fontWeight: '600' }}
                 >
-                  {segment.allianceName === 'Jamaat NCP Alliance' ? 'Jamaat-NCP' : segment.allianceName.replace('-led Alliance', '').replace(' & Independents', '')}: {segment.percentage.toFixed(0)}%
+                  {segment.allianceId === 'undeclared' 
+                    ? `Undeclared: ${segment.seats}`
+                    : `${segment.allianceName === 'Jamaat NCP Alliance' ? 'Jamaat-NCP' : segment.allianceName.replace('-led Alliance', '').replace(' & Independents', '')}: ${segment.seats}`
+                  }
                 </text>
               )}
             </g>
@@ -121,7 +146,7 @@ export default function ParliamentSeats({ allianceSeatCounts, totalSeats }: Prop
             className="fill-gray-900 dark:fill-gray-100 font-black pointer-events-none select-none"
             style={{ fontSize: '56px', fontWeight: '900' }}
           >
-            {totalSeats}
+            300
           </text>
           <text
             x="250"
@@ -148,7 +173,7 @@ export default function ParliamentSeats({ allianceSeatCounts, totalSeats }: Prop
                   />
                 </div>
               )}
-              {segment.allianceId === 'others' && (
+              {(segment.allianceId === 'others' || segment.allianceId === 'undeclared') && (
                 <div
                   className="w-3 h-3 rounded-full"
                   style={{ backgroundColor: segment.allianceColor }}

@@ -45,10 +45,28 @@ export default function ConstituencyList({ results, parties, constituencies }: P
       });
     }
 
-    // Search
+    // Enhanced Search - search by constituency name, party name, or seat name
     if (search.trim()) {
       const q = search.toLowerCase();
-      list = list.filter(item => item.constituency.name.toLowerCase().includes(q));
+      list = list.filter(item => {
+        // Search by constituency name
+        if (item.constituency.name.toLowerCase().includes(q)) return true;
+        
+        // Search by constituency number (seat name like "Dhaka-1")
+        const seatName = `${item.constituency.name.split('-')[0]}-${item.constituency.number}`;
+        if (seatName.toLowerCase().includes(q)) return true;
+        
+        // Search by winning party name
+        if (item.result?.winnerPartyId) {
+          const winnerParty = partyMap[item.result.winnerPartyId];
+          if (winnerParty && (
+            winnerParty.name.toLowerCase().includes(q) ||
+            winnerParty.shortName.toLowerCase().includes(q)
+          )) return true;
+        }
+        
+        return false;
+      });
     }
 
     // Sort: completed first, then partial, then pending
@@ -60,7 +78,7 @@ export default function ConstituencyList({ results, parties, constituencies }: P
     });
 
     return list;
-  }, [constituencies, resultMap, statusFilter, search]);
+  }, [constituencies, resultMap, statusFilter, search, partyMap]);
 
   return (
     <div>
@@ -87,10 +105,10 @@ export default function ConstituencyList({ results, parties, constituencies }: P
         <div className="relative group">
           <input
             type="text"
-            placeholder="Search constituencies..."
+            placeholder="Search by name, party, or seat..."
             value={search}
             onChange={e => setSearch(e.target.value)}
-            className="w-full sm:w-72 rounded-2xl border-2 border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 pl-11 pr-4 py-3 text-sm font-medium text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 outline-none focus:ring-2 focus:ring-bd-green/50 focus:border-bd-green dark:focus:border-emerald-500 transition-all shadow-sm hover:shadow-lg group-hover:border-gray-300 dark:group-hover:border-slate-600"
+            className="w-full sm:w-80 rounded-2xl border-2 border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 pl-11 pr-4 py-3 text-sm font-medium text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 outline-none focus:ring-2 focus:ring-bd-green/50 focus:border-bd-green dark:focus:border-emerald-500 transition-all shadow-sm hover:shadow-lg group-hover:border-gray-300 dark:group-hover:border-slate-600"
           />
           <svg className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 group-hover:text-bd-green dark:group-hover:text-emerald-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
