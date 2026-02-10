@@ -6,6 +6,7 @@ Built with Next.js 14, Firebase, TypeScript, and Tailwind CSS — optimized for 
 ## Features
 
 ### 📊 Core Dashboard Features
+
 - **Live Results Display** with real-time updates and "LIVE" indicator
 - **Alliance Aggregation System** - 3 main groups (BNP-led, Jamaat-led, Others)
 - **60+ Political Parties** fully supported with auto-aggregation
@@ -15,6 +16,7 @@ Built with Next.js 14, Firebase, TypeScript, and Tailwind CSS — optimized for 
 - **Party Performance Table** - Seats won, leading, votes, percentages
 
 ### 🗺️ Interactive Map
+
 - **Full-screen Leaflet Map** with pan and zoom controls
 - **Constituency-level Coloring** based on winner party
 - **Hover Tooltips** - Winner, votes, margin, turnout
@@ -23,6 +25,7 @@ Built with Next.js 14, Firebase, TypeScript, and Tailwind CSS — optimized for 
 - **Status Indicators** - Full color (completed), 50% opacity (leading), gray (pending)
 
 ### 📋 Constituency Features
+
 - **Searchable List** of all 300 constituencies
 - **Status Filters** - All, Completed, Partial, Pending
 - **Detailed Pages** - Full candidate list, vote breakdown, winner highlights
@@ -30,6 +33,7 @@ Built with Next.js 14, Firebase, TypeScript, and Tailwind CSS — optimized for 
 - **Alliance Context** display (e.g., "BNP (BNP Alliance)")
 
 ### 👮 Admin Panel
+
 - **Secure Hidden Route** (`/admin9012`) with Firebase authentication
 - **3-tier Cascade Selector** - Division → District → Constituency
 - **All 60+ Parties** available for vote entry
@@ -40,6 +44,7 @@ Built with Next.js 14, Firebase, TypeScript, and Tailwind CSS — optimized for 
 - **Auto-calculation** - Total votes, winner, margin, percentages
 
 ### 🎨 UI/UX Features
+
 - **Dark Mode Support** with system preference detection
 - **Manual Theme Toggle** in header
 - **Modern Gradient Design** on cards and backgrounds
@@ -49,6 +54,7 @@ Built with Next.js 14, Firebase, TypeScript, and Tailwind CSS — optimized for 
 - **Party Color Indicators** with symbols (emojis)
 
 ### 📰 News System
+
 - **Admin News Management** - Create, edit, publish news articles
 - **Slug-based URLs** - SEO-friendly article links (/news/article-slug)
 - **Markdown Support** - Bold/italic formatting in articles
@@ -57,6 +63,7 @@ Built with Next.js 14, Firebase, TypeScript, and Tailwind CSS — optimized for 
 - **Responsive Article Layout** - Mobile-optimized reading experience
 
 ### ⚡ Performance & Technical
+
 - **Real-time Updates** - Firestore `onSnapshot` listeners with optimized subscriptions
 - **Infinite Scroll** - ConstituencyList virtualization (loads 30 items at a time)
 - **React.memo** - Memoized components prevent unnecessary re-renders
@@ -67,6 +74,7 @@ Built with Next.js 14, Firebase, TypeScript, and Tailwind CSS — optimized for 
 - **Package Import Optimization** - Tree-shaking for @heroicons/react
 
 ### 🔐 Security & Hardening
+
 - **Firebase Authentication** with email/password and admin verification
 - **Firestore Security Rules** with field-level validation (vote counts, status enums)
 - **Content Security Policy (CSP)** - Prevents XSS attacks
@@ -78,6 +86,7 @@ Built with Next.js 14, Firebase, TypeScript, and Tailwind CSS — optimized for 
 - **Audit Trail** - All changes tracked with user ID and timestamp
 
 ### 📊 Data Management
+
 - **60+ Registered Parties** with alliance assignments
 - **Alliance Definitions** - BNP-led (4 parties), Jamaat-led (4 parties), Others (50+)
 - **300 Constituencies** across 8 divisions and 64 districts
@@ -86,15 +95,15 @@ Built with Next.js 14, Firebase, TypeScript, and Tailwind CSS — optimized for 
 
 ## Tech Stack
 
-| Layer      | Technology                      |
-|------------|----------------------------------|
-| Frontend   | Next.js 14 (App Router), React 18 |
-| Styling    | Tailwind CSS                     |
-| Map        | Leaflet + react-leaflet          |
-| Backend    | Firebase Firestore               |
-| Auth       | Firebase Authentication          |
-| Hosting    | Vercel                           |
-| Analytics  | Cloudflare Web Analytics         |
+| Layer     | Technology                        |
+| --------- | --------------------------------- |
+| Frontend  | Next.js 14 (App Router), React 18 |
+| Styling   | Tailwind CSS                      |
+| Map       | Leaflet + react-leaflet           |
+| Backend   | Firebase Firestore                |
+| Auth      | Firebase Authentication           |
+| Hosting   | Vercel                            |
+| Analytics | Cloudflare Web Analytics          |
 
 ## Quick Start
 
@@ -152,7 +161,8 @@ npm run dev
 Open [http://localhost:3000](http://localhost:3000)
 
 **Routes:**
-- `/` — Dashboard  
+
+- `/` — Dashboard
 - `/map` — Full map (currently disabled)
 - `/news` — News articles listing
 - `/news/[slug]` — Individual article pages
@@ -236,14 +246,14 @@ public/data/geojson/    → Map boundary + district data
 
 ## Firestore Collections
 
-| Collection       | Purpose                        |
-|------------------|--------------------------------|
-| `parties`        | Party metadata (60+ parties)  |
+| Collection       | Purpose                                  |
+| ---------------- | ---------------------------------------- |
+| `parties`        | Party metadata (60+ parties)             |
 | `constituencies` | 300 constituency records with candidates |
-| `results`        | Vote tallies with field validation |
-| `summary`        | Real-time aggregated metrics   |
-| `news`           | Articles with draft/published status |
-| `adminUsers`     | Role-based access control      |
+| `results`        | Vote tallies with field validation       |
+| `summary`        | Real-time aggregated metrics             |
+| `news`           | Articles with draft/published status     |
+| `adminUsers`     | Role-based access control                |
 
 ## GeoJSON
 
@@ -253,6 +263,7 @@ Recommended source: [GADM](https://gadm.org/download_country.html) or Bangladesh
 ## Performance & Security Features
 
 ### Performance Optimizations
+
 - **Infinite Scroll**: ConstituencyList renders 30 items initially, loads more on scroll
 - **React.memo**: Memoized components prevent cascading re-renders
 - **Hook Optimization**: Fixed duplicate Firestore subscriptions in useSummary
@@ -261,6 +272,7 @@ Recommended source: [GADM](https://gadm.org/download_country.html) or Bangladesh
 - **Lazy Loading**: Map component loaded on-demand (currently disabled)
 
 ### Security Hardening
+
 - **Content Security Policy**: Strict CSP prevents XSS injection attacks
 - **Input Validation**: Vote counts validated (0-10M range), HTML tags stripped
 - **Rate Limiting**: Admin actions limited to prevent abuse (10 req/min)
