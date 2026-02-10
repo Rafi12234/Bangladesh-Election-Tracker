@@ -5,6 +5,7 @@
 
 import { useEffect, useState, useMemo } from 'react';
 import Header from '@/components/Header';
+import ElectionBanner from '@/components/ElectionBanner';
 import Footer from '@/components/Footer';
 import ResultsSummary from '@/components/ResultsSummary';
 import ConstituencyList from '@/components/ConstituencyList';
@@ -48,6 +49,7 @@ export default function HomePage() {
   return (
     <>
       <Header />
+      <ElectionBanner />
       <main className="mx-auto max-w-7xl px-3 sm:px-4 py-6 sm:py-8 md:py-10">
         <div className="space-y-8">
           <ResultsSummary summary={summary} seatCounts={seatCounts} allianceSeatCounts={allianceSeatCounts} />
