@@ -13,6 +13,7 @@
     "firebase": "^10.14.1",
     "firebase-admin": "^12.0.0",
     "leaflet": "^1.9.4",
+    "mammoth": "^1.11.0",
     "next": "^14.2.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",

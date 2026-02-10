@@ -73,6 +73,13 @@ export async function getConstituencyDocument(id: string): Promise<Record<string
   return docSnap.exists() ? docSnap.data() : null;
 }
 
+// Fetch ALL constituency documents (id + full data) for the admin panel
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function getAllConstituencyDocuments(): Promise<{ id: string; data: Record<string, any> }[]> {
+  const snapshot = await getDocs(collection(firestore, COLLECTIONS.CONSTITUENCIES));
+  return snapshot.docs.map(d => ({ id: d.id, data: d.data() }));
+}
+
 export async function getConstituenciesByDistrict(districtId: string): Promise<Constituency[]> {
   const snapshot = await getDocs(
     query(

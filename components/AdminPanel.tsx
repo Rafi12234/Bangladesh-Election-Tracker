@@ -1,13 +1,15 @@
 'use client';
 
 /* Admin Result Entry Panel
-   Shows all 300 constituencies in a searchable list grouped by division/district.
-   Click any constituency to expand and enter vote results. */
+   Fetches all constituencies from Firebase collection: constituencies.
+   Each doc ID = constituency name (lowercase). Each doc has a `candidates` array
+   where each element has { candidateName, party, symbol }.
+   Grouped by district using the static divisions data for name lookups. */
 
-import { useState, useMemo, useCallback, type FormEvent } from 'react';
+import { useState, useMemo, useCallback, useEffect, type FormEvent } from 'react';
 import type { Party, AdminUser, Result } from '@/types';
-import { divisions, getConstituencyId, getConstituencyName } from '@/data/divisions';
-import { saveResult, getResultByConstituency, getConstituencyDocument } from '@/lib/firestore';
+import { divisions } from '@/data/divisions';
+import { saveResult, getResultByConstituency, getAllConstituencyDocuments } from '@/lib/firestore';
 import { formatNumber, formatPercentage } from '@/lib/utils';
 import { getPartyById } from '@/data/parties';
 
@@ -23,46 +25,57 @@ interface VoteInput {
 }
 
 interface CandidateEntry {
-  partyId: string;
-  partyName: string;
+  party: string;
   candidateName: string;
   symbol: string;
   color: string;
 }
 
-interface ConstituencyItem {
-  id: string;
-  name: string;
-  number: number;
-  districtId: string;
-  districtName: string;
+interface FirebaseConstituency {
+  id: string;            // doc ID from Firebase (e.g., "dhaka-1")
+  displayName: string;   // prettified name (e.g., "Dhaka-1")
+  districtId: string;    // extracted district part (e.g., "dhaka")
+  districtName: string;  // looked up from divisions.ts
   divisionId: string;
   divisionName: string;
+  number: number;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  rawData: Record<string, any>;
 }
 
-function buildConstituencyList(): ConstituencyItem[] {
-  const list: ConstituencyItem[] = [];
-  for (const div of divisions) {
-    for (const dist of div.districts) {
-      for (const num of dist.constituencies) {
-        list.push({
-          id: getConstituencyId(dist.id, num),
-          name: getConstituencyName(dist.id, num),
-          number: num,
-          districtId: dist.id,
-          districtName: dist.name,
-          divisionId: div.id,
-          divisionName: div.name,
-        });
-      }
-    }
+// Build a lookup map: districtId → { districtName, divisionId, divisionName }
+const DISTRICT_MAP = new Map<string, { districtName: string; divisionId: string; divisionName: string }>();
+for (const div of divisions) {
+  for (const dist of div.districts) {
+    DISTRICT_MAP.set(dist.id, {
+      districtName: dist.name,
+      divisionId: div.id,
+      divisionName: div.name,
+    });
   }
-  return list;
 }
 
-const ALL_CONSTITUENCIES = buildConstituencyList();
+function parseConstituencyId(docId: string): { districtId: string; number: number } {
+  // Doc IDs are like "dhaka-1", "coxs-bazar-2", etc.
+  const lastDash = docId.lastIndexOf('-');
+  if (lastDash === -1) return { districtId: docId, number: 0 };
+  const numPart = docId.slice(lastDash + 1);
+  const num = parseInt(numPart, 10);
+  if (isNaN(num)) return { districtId: docId, number: 0 };
+  return { districtId: docId.slice(0, lastDash), number: num };
+}
+
+function prettifyName(docId: string): string {
+  const { districtId, number } = parseConstituencyId(docId);
+  const info = DISTRICT_MAP.get(districtId);
+  if (info) return `${info.districtName}-${number}`;
+  // Fallback: capitalize first letter of each word
+  return docId.replace(/(^|-)(\w)/g, (_, sep, ch) => (sep === '-' ? '-' : '') + ch.toUpperCase());
+}
 
 export default function AdminPanel({ parties, adminUser, onLogout }: Props) {
+  const [allConstituencies, setAllConstituencies] = useState<FirebaseConstituency[]>([]);
+  const [loadingList, setLoadingList] = useState(true);
   const [search, setSearch] = useState('');
   const [filterDivision, setFilterDivision] = useState('');
 
@@ -75,33 +88,75 @@ export default function AdminPanel({ parties, adminUser, onLogout }: Props) {
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [existingResult, setExistingResult] = useState<Result | null>(null);
 
+  // Fetch all constituency docs from Firebase on mount
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const docs = await getAllConstituencyDocuments();
+        if (cancelled) return;
+
+        const parsed: FirebaseConstituency[] = docs.map(d => {
+          const { districtId, number } = parseConstituencyId(d.id);
+          const info = DISTRICT_MAP.get(districtId);
+          return {
+            id: d.id,
+            displayName: prettifyName(d.id),
+            districtId,
+            districtName: info?.districtName || districtId,
+            divisionId: info?.divisionId || '',
+            divisionName: info?.divisionName || '',
+            number,
+            rawData: d.data,
+          };
+        });
+
+        // Sort by divisionName → districtName → number
+        parsed.sort((a, b) =>
+          a.divisionName.localeCompare(b.divisionName) ||
+          a.districtName.localeCompare(b.districtName) ||
+          a.number - b.number
+        );
+
+        setAllConstituencies(parsed);
+      } catch (err) {
+        console.error('Failed to fetch constituencies:', err);
+      } finally {
+        if (!cancelled) setLoadingList(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
   const filtered = useMemo(() => {
-    let list = ALL_CONSTITUENCIES;
+    let list = allConstituencies;
     if (filterDivision) list = list.filter(c => c.divisionId === filterDivision);
     if (search.trim()) {
       const q = search.trim().toLowerCase();
       list = list.filter(c =>
-        c.name.toLowerCase().includes(q) ||
+        c.displayName.toLowerCase().includes(q) ||
         c.districtName.toLowerCase().includes(q) ||
         c.divisionName.toLowerCase().includes(q) ||
         c.id.toLowerCase().includes(q)
       );
     }
     return list;
-  }, [search, filterDivision]);
+  }, [search, filterDivision, allConstituencies]);
 
   const grouped = useMemo(() => {
-    const map = new Map<string, Map<string, ConstituencyItem[]>>();
+    const map = new Map<string, Map<string, FirebaseConstituency[]>>();
     for (const c of filtered) {
-      if (!map.has(c.divisionName)) map.set(c.divisionName, new Map());
-      const distMap = map.get(c.divisionName)!;
-      if (!distMap.has(c.districtName)) distMap.set(c.districtName, []);
-      distMap.get(c.districtName)!.push(c);
+      const divKey = c.divisionName || 'Unknown Division';
+      const distKey = c.districtName || 'Unknown District';
+      if (!map.has(divKey)) map.set(divKey, new Map());
+      const distMap = map.get(divKey)!;
+      if (!distMap.has(distKey)) distMap.set(distKey, []);
+      distMap.get(distKey)!.push(c);
     }
     return map;
   }, [filtered]);
 
-  const selectConstituency = useCallback(async (c: ConstituencyItem) => {
+  const selectConstituency = useCallback((c: FirebaseConstituency) => {
     if (activeId === c.id) {
       setActiveId(null);
       setCandidates([]);
@@ -115,64 +170,42 @@ export default function AdminPanel({ parties, adminUser, onLogout }: Props) {
     setLoadingId(c.id);
     setMessage(null);
 
-    try {
-      // Fetch raw constituency doc to discover party/candidate entries
-      const rawDoc = await getConstituencyDocument(c.id);
-      const entries: CandidateEntry[] = [];
+    // Read candidates from the already-fetched rawData
+    const entries: CandidateEntry[] = [];
+    const candidatesArr = c.rawData.candidates;
 
-      if (rawDoc) {
-        for (const [key, value] of Object.entries(rawDoc)) {
-          const staticParty = getPartyById(key);
-
-          if (Array.isArray(value) && value.length > 0) {
-            // Array field — extract first candidate's info
-            const item = value[0];
-            entries.push({
-              partyId: key,
-              partyName: item.partyName || staticParty?.shortName || key,
-              candidateName: item.candidateName || item.name || '',
-              symbol: item.symbol || staticParty?.symbol || '',
-              color: staticParty?.color || '#6B7280',
-            });
-          } else if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
-            // Map/object field — candidate data stored directly
-            const obj = value as Record<string, unknown>;
-            entries.push({
-              partyId: key,
-              partyName: (obj.partyName as string) || staticParty?.shortName || key,
-              candidateName: (obj.candidateName as string) || (obj.name as string) || '',
-              symbol: (obj.symbol as string) || staticParty?.symbol || '',
-              color: staticParty?.color || '#6B7280',
-            });
-          } else if (staticParty) {
-            // Primitive value (number/string from reset etc.) — show party from static data
-            entries.push({
-              partyId: key,
-              partyName: staticParty.shortName,
-              candidateName: '',
-              symbol: staticParty.symbol,
-              color: staticParty.color,
-            });
-          }
-        }
+    if (Array.isArray(candidatesArr)) {
+      for (const item of candidatesArr) {
+        const partyKey = (item.party || '').toString();
+        const staticParty = getPartyById(partyKey);
+        entries.push({
+          party: item.party || staticParty?.shortName || partyKey || 'Unknown',
+          candidateName: item.candidateName || item.name || '',
+          symbol: item.symbol || staticParty?.symbol || '',
+          color: staticParty?.color || '#6B7280',
+        });
       }
-
-      setCandidates(entries);
-
-      // Fetch existing result for vote counts
-      const result = await getResultByConstituency(c.id);
-      setExistingResult(result);
-      setVoteInputs(entries.map(e => ({ partyId: e.partyId, votes: result?.partyVotes[e.partyId] || 0 })));
-      if (result?.status) setStatus(result.status as 'partial' | 'completed');
-      else setStatus('partial');
-    } catch {
-      setCandidates([]);
-      setVoteInputs([]);
-      setExistingResult(null);
-      setStatus('partial');
-    } finally {
-      setLoadingId(null);
     }
+
+    setCandidates(entries);
+
+    // Fetch existing result for vote counts
+    getResultByConstituency(c.id)
+      .then(result => {
+        setExistingResult(result);
+        setVoteInputs(entries.map(e => ({
+          partyId: e.party,
+          votes: result?.partyVotes[e.party] || 0,
+        })));
+        if (result?.status) setStatus(result.status as 'partial' | 'completed');
+        else setStatus('partial');
+      })
+      .catch(() => {
+        setVoteInputs(entries.map(e => ({ partyId: e.party, votes: 0 })));
+        setExistingResult(null);
+        setStatus('partial');
+      })
+      .finally(() => setLoadingId(null));
   }, [activeId]);
 
   const updateVote = (partyId: string, value: string) => {
@@ -207,7 +240,7 @@ export default function AdminPanel({ parties, adminUser, onLogout }: Props) {
         adminUid: adminUser.uid,
       });
 
-      const name = ALL_CONSTITUENCIES.find(c => c.id === activeId)?.name || activeId;
+      const name = allConstituencies.find(c => c.id === activeId)?.displayName || activeId;
       setMessage({ type: 'success', text: `Result saved for ${name}` });
     } catch (err) {
       setMessage({ type: 'error', text: err instanceof Error ? err.message : 'Failed to save' });
@@ -274,7 +307,16 @@ export default function AdminPanel({ parties, adminUser, onLogout }: Props) {
         </div>
       )}
 
+      {/* Loading state */}
+      {loadingList && (
+        <div className="flex items-center justify-center py-16">
+          <div className="h-8 w-8 animate-spin rounded-full border-3 border-gray-300 border-t-bd-green" />
+          <span className="ml-3 text-sm text-gray-500">Loading constituencies from Firebase...</span>
+        </div>
+      )}
+
       {/* Constituency list grouped by division → district */}
+      {!loadingList && (
       <div className="space-y-4">
         {Array.from(grouped.entries()).map(([divName, distMap]) => (
           <div key={divName} className="rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-soft overflow-hidden">
@@ -316,7 +358,7 @@ export default function AdminPanel({ parties, adminUser, onLogout }: Props) {
                             }`}>
                               {c.number}
                             </span>
-                            <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">{c.name}</span>
+                            <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">{c.displayName}</span>
                           </div>
                           <div className="flex items-center gap-2">
                             {isLoading && (
@@ -344,15 +386,15 @@ export default function AdminPanel({ parties, adminUser, onLogout }: Props) {
                                 <div className="px-5 py-6 text-center text-xs text-gray-400 dark:text-gray-500">
                                   No candidates found in this constituency.
                                 </div>
-                              ) : candidates.map(candidate => {
-                                const input = voteInputs.find(v => v.partyId === candidate.partyId);
+                              ) : candidates.map((candidate, idx) => {
+                                const input = voteInputs.find(v => v.partyId === candidate.party);
                                 const votes = input?.votes || 0;
                                 const pct = totalVotes > 0 ? (votes / totalVotes) * 100 : 0;
-                                const isLeading = calculated.winnerId === candidate.partyId && votes > 0;
+                                const isLeading = calculated.winnerId === candidate.party && votes > 0;
 
                                 return (
                                   <div
-                                    key={candidate.partyId}
+                                    key={`${candidate.party}-${idx}`}
                                     className={`flex items-center gap-3 px-5 py-2.5 ${
                                       isLeading ? 'bg-green-50/50 dark:bg-emerald-900/10' : ''
                                     }`}
@@ -361,7 +403,7 @@ export default function AdminPanel({ parties, adminUser, onLogout }: Props) {
                                     <span className="h-3 w-3 rounded-full flex-shrink-0" style={{ backgroundColor: candidate.color }} />
                                     <div className="flex-1 min-w-0">
                                       <span className="text-xs font-semibold text-gray-900 dark:text-gray-100 truncate block">
-                                        {candidate.partyName}
+                                        {candidate.party}
                                         {isLeading && <span className="ml-1.5 text-green-600 dark:text-emerald-400">● Leading</span>}
                                       </span>
                                       {candidate.candidateName && (
@@ -372,7 +414,7 @@ export default function AdminPanel({ parties, adminUser, onLogout }: Props) {
                                       type="number"
                                       min="0"
                                       value={votes || ''}
-                                      onChange={e => updateVote(candidate.partyId, e.target.value)}
+                                      onChange={e => updateVote(candidate.party, e.target.value)}
                                       placeholder="0"
                                       className="w-24 rounded-md border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-2.5 py-1.5 text-right text-xs font-semibold text-gray-900 dark:text-gray-100 outline-none focus:border-bd-green dark:focus:border-emerald-400 focus:ring-1 focus:ring-bd-green/20 transition-all"
                                     />
@@ -388,8 +430,8 @@ export default function AdminPanel({ parties, adminUser, onLogout }: Props) {
                                   Total: <strong className="text-gray-900 dark:text-gray-100">{formatNumber(totalVotes)}</strong>
                                 </span>
                                 <span className="text-gray-500 dark:text-gray-400">
-                                  Winner: <strong style={{ color: candidates.find(c => c.partyId === calculated.winnerId)?.color }}>
-                                    {candidates.find(c => c.partyId === calculated.winnerId)?.partyName || '—'}
+                                  Winner: <strong style={{ color: candidates.find(cd => cd.party === calculated.winnerId)?.color }}>
+                                    {candidates.find(cd => cd.party === calculated.winnerId)?.party || '—'}
                                   </strong>
                                 </span>
                                 <span className="text-gray-500 dark:text-gray-400">
@@ -425,12 +467,13 @@ export default function AdminPanel({ parties, adminUser, onLogout }: Props) {
           </div>
         ))}
 
-        {filtered.length === 0 && (
+        {filtered.length === 0 && !loadingList && (
           <div className="rounded-xl border border-dashed border-gray-300 dark:border-slate-700 bg-gray-50 dark:bg-slate-900/50 p-12 text-center">
             <p className="text-sm text-gray-500 dark:text-gray-400">No constituencies match your search.</p>
           </div>
         )}
       </div>
+      )}
     </div>
   );
 }
