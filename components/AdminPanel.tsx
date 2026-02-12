@@ -156,7 +156,7 @@ export default function AdminPanel({ adminUser, onLogout }: Props) {
     if (activeId === c.id) {
       setActiveId(null);
       setCandidates([]);
-      setVoteInputs([]);
+      setSelectedWinner('');
       setExistingResult(null);
       setMessage(null);
       return;
