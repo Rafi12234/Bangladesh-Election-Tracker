@@ -15,7 +15,6 @@ import Link from 'next/link';
 import React, { useMemo, useState, useCallback, useRef, useEffect } from 'react';
 import type { Result, Party, Constituency } from '@/types';
 import { RESULT_STATUS } from '@/lib/constants';
-import { formatNumber } from '@/lib/utils';
 import { getWinnerDisplayName } from '@/lib/alliances';
 import Pagination from '@/components/Pagination';
 
@@ -287,12 +286,7 @@ const ConstituencyCard = React.memo(function ConstituencyCard({
                   'Awaiting result'
                 )}
               </p>
-              {result && (
-                <>
-                  <span className="text-gray-300 dark:text-gray-600">•</span>
-                  <span className="text-xs font-medium text-gray-500 dark:text-gray-400">{formatNumber(result.totalVotes)} votes</span>
-                </>
-              )}
+
             </div>
           </div>
         </div>

@@ -10,19 +10,15 @@ import { useState, useMemo, useCallback, useEffect, type FormEvent } from 'react
 import type { AdminUser, Result } from '@/types';
 import { divisions } from '@/data/divisions';
 import { saveResult, getResultByConstituency, getAllConstituencyDocuments } from '@/lib/firestore';
-import { formatNumber, formatPercentage } from '@/lib/utils';
 import { getPartyById, normalizePartyKey } from '@/data/parties';
-import { validateVoteCount, checkRateLimit } from '@/lib/validation';
+import { checkRateLimit } from '@/lib/validation';
 
 interface Props{
   adminUser: AdminUser;
   onLogout: () => void;
 }
 
-interface VoteInput {
-  partyId: string;
-  votes: number;
-}
+
 
 interface CandidateEntry {
   party: string;          // Normalized party ID (e.g. 'bnp')
@@ -82,8 +78,7 @@ export default function AdminPanel({ adminUser, onLogout }: Props) {
 
   const [activeId, setActiveId] = useState<string | null>(null);
   const [candidates, setCandidates] = useState<CandidateEntry[]>([]);
-  const [voteInputs, setVoteInputs] = useState<VoteInput[]>([]);
-  const [status, setStatus] = useState<'pending' | 'partial' | 'counting' | 'completed'>('completed');
+  const [selectedWinner, setSelectedWinner] = useState<string>('');
   const [saving, setSaving] = useState(false);
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -192,43 +187,22 @@ export default function AdminPanel({ adminUser, onLogout }: Props) {
 
     setCandidates(entries);
 
-    // Fetch existing result for vote counts
+    // Fetch existing result to pre-select winner
     getResultByConstituency(c.id)
       .then(result => {
         setExistingResult(result);
-        setVoteInputs(entries.map(e => ({
-          partyId: e.party,
-          votes: result?.partyVotes[e.party] || 0,
-        })));
-        if (result?.status) setStatus(result.status as 'pending' | 'partial' | 'counting' | 'completed');
-        else setStatus('completed');
+        setSelectedWinner(result?.winnerPartyId || '');
       })
       .catch(() => {
-        setVoteInputs(entries.map(e => ({ partyId: e.party, votes: 0 })));
         setExistingResult(null);
-        setStatus('completed');
+        setSelectedWinner('');
       })
       .finally(() => setLoadingId(null));
   }, [activeId]);
 
-  const updateVote = (partyId: string, value: string) => {
-    // SECURITY: Validate vote count — clamps to non-negative integer, max 10M
-    const votes = validateVoteCount(value);
-    setVoteInputs(prev => prev.map(v => (v.partyId === partyId ? { ...v, votes } : v)));
-  };
-
-  const totalVotes = useMemo(() => voteInputs.reduce((s, v) => s + v.votes, 0), [voteInputs]);
-
-  const calculated = useMemo(() => {
-    const sorted = [...voteInputs].sort((a, b) => b.votes - a.votes);
-    const winnerId = sorted[0]?.votes > 0 ? sorted[0].partyId : null;
-    const margin = sorted.length >= 2 ? sorted[0].votes - sorted[1].votes : sorted[0]?.votes || 0;
-    return { winnerId, margin };
-  }, [voteInputs]);
-
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!activeId) return;
+    if (!activeId || !selectedWinner) return;
 
     // SECURITY: Rate limit — max 10 saves per minute per admin
     if (!checkRateLimit(`save-result-${adminUser.uid}`, 10, 60_000)) {
@@ -240,13 +214,10 @@ export default function AdminPanel({ adminUser, onLogout }: Props) {
     setMessage(null);
 
     try {
-      const partyVotes: Record<string, number> = {};
-      voteInputs.forEach(v => { partyVotes[v.partyId] = v.votes; });
-
       await saveResult({
         constituencyId: activeId,
-        partyVotes,
-        status,
+        winnerPartyId: selectedWinner,
+        status: 'completed',
         adminUid: adminUser.uid,
       });
 
@@ -391,82 +362,70 @@ export default function AdminPanel({ adminUser, onLogout }: Props) {
                               </div>
                             )}
 
-                            <div className="divide-y divide-gray-100 dark:divide-slate-800/50">
+                            <div className="px-5 py-4">
                               {candidates.length === 0 ? (
-                                <div className="px-5 py-6 text-center text-xs text-gray-400 dark:text-gray-500">
+                                <div className="py-4 text-center text-xs text-gray-400 dark:text-gray-500">
                                   No candidates found in this constituency.
                                 </div>
-                              ) : candidates.map((candidate, idx) => {
-                                const input = voteInputs.find(v => v.partyId === candidate.party);
-                                const votes = input?.votes || 0;
-                                const pct = totalVotes > 0 ? (votes / totalVotes) * 100 : 0;
-                                const isLeading = calculated.winnerId === candidate.party && votes > 0;
-
-                                return (
-                                  <div
-                                    key={`${candidate.party}-${idx}`}
-                                    className={`flex items-center gap-3 px-5 py-2.5 ${
-                                      isLeading ? 'bg-green-50/50 dark:bg-emerald-900/10' : ''
-                                    }`}
-                                  >
-                                    <span className="text-base">{candidate.symbol}</span>
-                                    <span className="h-3 w-3 rounded-full flex-shrink-0" style={{ backgroundColor: candidate.color }} />
-                                    <div className="flex-1 min-w-0">
-                                      <span className="text-xs font-semibold text-gray-900 dark:text-gray-100 truncate block">
-                                        {candidate.partyDisplayName}
-                                        {isLeading && <span className="ml-1.5 text-green-600 dark:text-emerald-400">● Leading</span>}
-                                      </span>
-                                      {candidate.candidateName && (
-                                        <span className="text-[11px] text-gray-500 dark:text-gray-400 truncate block">{candidate.candidateName}</span>
-                                      )}
-                                    </div>
-                                    <input
-                                      type="number"
-                                      min="0"
-                                      value={votes || ''}
-                                      onChange={e => updateVote(candidate.party, e.target.value)}
-                                      placeholder="0"
-                                      className="w-24 rounded-md border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-2.5 py-1.5 text-right text-xs font-semibold text-gray-900 dark:text-gray-100 outline-none focus:border-bd-green dark:focus:border-emerald-400 focus:ring-1 focus:ring-bd-green/20 transition-all"
-                                    />
-                                    <span className="w-12 text-right text-xs text-gray-400">{formatPercentage(pct)}</span>
+                              ) : (
+                                <div className="space-y-3">
+                                  <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">
+                                    Declare Winner
+                                  </label>
+                                  <div className="space-y-2">
+                                    {candidates.map((candidate, idx) => {
+                                      const isSelected = selectedWinner === candidate.party;
+                                      return (
+                                        <button
+                                          key={`${candidate.party}-${idx}`}
+                                          type="button"
+                                          onClick={() => setSelectedWinner(candidate.party)}
+                                          className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg border-2 transition-all ${
+                                            isSelected
+                                              ? 'border-green-500 bg-green-50 dark:bg-emerald-900/20 shadow-md'
+                                              : 'border-gray-200 dark:border-slate-700 hover:border-gray-300 dark:hover:border-slate-600 hover:bg-gray-50 dark:hover:bg-slate-800/30'
+                                          }`}
+                                        >
+                                          <span className="text-lg">{candidate.symbol}</span>
+                                          <span className="h-3.5 w-3.5 rounded-full flex-shrink-0" style={{ backgroundColor: candidate.color }} />
+                                          <div className="flex-1 min-w-0 text-left">
+                                            <span className="text-sm font-semibold text-gray-900 dark:text-gray-100 block truncate">
+                                              {candidate.partyDisplayName}
+                                            </span>
+                                            {candidate.candidateName && (
+                                              <span className="text-xs text-gray-500 dark:text-gray-400 block truncate">{candidate.candidateName}</span>
+                                            )}
+                                          </div>
+                                          {isSelected && (
+                                            <span className="text-green-600 dark:text-emerald-400 font-bold text-sm">✓ Winner</span>
+                                          )}
+                                        </button>
+                                      );
+                                    })}
                                   </div>
-                                );
-                              })}
+                                </div>
+                              )}
                             </div>
 
-                            <div className="px-5 py-3 border-t border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800/50 flex flex-col sm:flex-row items-start sm:items-center gap-3">
-                              <div className="flex items-center gap-4 text-xs">
-                                <span className="text-gray-500 dark:text-gray-400">
-                                  Total: <strong className="text-gray-900 dark:text-gray-100">{formatNumber(totalVotes)}</strong>
-                                </span>
-                                <span className="text-gray-500 dark:text-gray-400">
-                                  Winner: <strong style={{ color: candidates.find(cd => cd.party === calculated.winnerId)?.color }}>
-                                    {candidates.find(cd => cd.party === calculated.winnerId)?.partyDisplayName || '—'}
-                                  </strong>
-                                </span>
-                                <span className="text-gray-500 dark:text-gray-400">
-                                  Margin: <strong className="text-gray-900 dark:text-gray-100">{formatNumber(calculated.margin)}</strong>
-                                </span>
+                            <div className="px-5 py-3 border-t border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800/50 flex items-center justify-between gap-3">
+                              <div className="text-xs text-gray-500 dark:text-gray-400">
+                                {selectedWinner ? (
+                                  <span>
+                                    Winner: <strong style={{ color: candidates.find(cd => cd.party === selectedWinner)?.color }}>
+                                      {candidates.find(cd => cd.party === selectedWinner)?.partyDisplayName}
+                                    </strong>
+                                  </span>
+                                ) : (
+                                  <span>Select a winner to declare</span>
+                                )}
                               </div>
-                              <div className="flex items-center gap-2 sm:ml-auto">
-                                <select
-                                  value={status}
-                                  onChange={e => setStatus(e.target.value as 'pending' | 'partial' | 'counting' | 'completed')}
-                                  className="rounded-md border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-1.5 text-xs text-gray-900 dark:text-gray-100 outline-none focus:border-bd-green dark:focus:border-emerald-400 transition-all"
-                                >
-                                  <option value="pending">Pending</option>
-                                  <option value="partial">Partial</option>
-                                  <option value="counting">Counting</option>
-                                  <option value="completed">Declared</option>
-                                </select>
-                                <button
-                                  type="submit"
-                                  disabled={saving || totalVotes === 0}
-                                  className="rounded-md bg-bd-green dark:bg-emerald-600 px-5 py-1.5 text-xs font-semibold text-white hover:bg-bd-green/90 dark:hover:bg-emerald-500 disabled:opacity-60 disabled:cursor-not-allowed transition-all"
-                                >
-                                  {saving ? 'Saving...' : existingResult ? 'Update' : 'Save'}
-                                </button>
-                              </div>
+                              <button
+                                type="submit"
+                                disabled={saving || !selectedWinner}
+                                className="rounded-md bg-bd-green dark:bg-emerald-600 px-5 py-2 text-xs font-semibold text-white hover:bg-bd-green/90 dark:hover:bg-emerald-500 disabled:opacity-60 disabled:cursor-not-allowed transition-all"
+                              >
+                                {saving ? 'Saving...' : existingResult ? 'Update Result' : 'Declare Result'}
+                              </button>
                             </div>
                           </form>
                         )}

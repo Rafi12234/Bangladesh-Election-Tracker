@@ -94,15 +94,13 @@ export default function HomePage() {
     parties.forEach(p => {
       counts[p.id] = { partyId: p.id, partyName: p.shortName, partyColor: p.color, seats: 0, leadingSeats: 0, totalVotes: 0, votePercentage: 0 };
     });
-    let totalVotes = 0;
     results.forEach(r => {
-      Object.entries(r.partyVotes).forEach(([pid, v]) => { if (counts[pid]) counts[pid].totalVotes += v; totalVotes += v; });
       if (r.status === 'completed' && r.winnerPartyId && counts[r.winnerPartyId]) counts[r.winnerPartyId].seats++;
-      else if (r.status === 'partial') { const l = Object.entries(r.partyVotes).sort(([,a],[,b]) => b - a)[0]; if (l && counts[l[0]]) counts[l[0]].leadingSeats++; }
+      else if (r.status === 'partial' && r.winnerPartyId && counts[r.winnerPartyId]) counts[r.winnerPartyId].leadingSeats++;
     });
-    return Object.values(counts).map(sc => ({ ...sc, votePercentage: totalVotes > 0 ? (sc.totalVotes / totalVotes) * 100 : 0 }))
-      .filter(sc => sc.seats > 0 || sc.leadingSeats > 0 || sc.totalVotes > 0)
-      .sort((a, b) => b.seats - a.seats || b.totalVotes - a.totalVotes);
+    return Object.values(counts)
+      .filter(sc => sc.seats > 0 || sc.leadingSeats > 0)
+      .sort((a, b) => b.seats - a.seats || b.leadingSeats - a.leadingSeats);
   }, [results, parties]);
 
   const allianceSeatCounts = useMemo(() => aggregateAllianceSeatCounts(results), [results]);

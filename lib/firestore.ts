@@ -396,13 +396,14 @@ export function subscribeToResult(
 
 export interface SaveResultPayload {
   constituencyId: string;
-  partyVotes: Record<string, number>;
+  winnerPartyId: string;
+  partyVotes?: Record<string, number>;
   status: 'pending' | 'partial' | 'counting' | 'completed';
   adminUid: string;
 }
 
 export async function saveResult(payload: SaveResultPayload): Promise<void> {
-  const { status, adminUid } = payload;
+  const { status, adminUid, winnerPartyId } = payload;
   const normalizedId = normalizeConstituencyId(payload.constituencyId);
   
   // Check which document ID format already exists to avoid duplicates
@@ -415,42 +416,37 @@ export async function saveResult(payload: SaveResultPayload): Promise<void> {
     const originalDocSnap = await getDoc(originalDocRef);
     if (originalDocSnap.exists()) {
       actualDocId = originalFormat;  // Use original format if it exists
-    } else {
     }
   }
   
-  // Normalize all party keys in partyVotes (in case old data has full party names)
+  // If partyVotes provided, normalize keys; otherwise use empty
   const partyVotes: Record<string, number> = {};
-  for (const [key, votes] of Object.entries(payload.partyVotes)) {
-    const normalizedKey = normalizePartyKey(key);
-    partyVotes[normalizedKey] = (partyVotes[normalizedKey] || 0) + votes;
+  if (payload.partyVotes) {
+    for (const [key, votes] of Object.entries(payload.partyVotes)) {
+      const normalizedKey = normalizePartyKey(key);
+      partyVotes[normalizedKey] = (partyVotes[normalizedKey] || 0) + votes;
+    }
   }
   
-  // Calculate totals and winner
   const totalVotes = Object.values(partyVotes).reduce((sum, v) => sum + v, 0);
   
-  // Find winner (party with most votes) - now using normalized keys
-  const sortedParties = Object.entries(partyVotes).sort(([, a], [, b]) => b - a);
-  const winnerId = sortedParties[0]?.[0] || null;
-  const winnerVotes = sortedParties[0]?.[1] || 0;
-  const runnerUpVotes = sortedParties[1]?.[1] || 0;
-  const margin = winnerVotes - runnerUpVotes;
-  const marginPercentage = totalVotes > 0 ? (margin / totalVotes) * 100 : 0;
-  
-  // Calculate alliance aggregation from normalized keys
-  const allianceVotes = calculateAllianceVotes(partyVotes);
+  // Use the explicitly declared winner
+  const winnerId = winnerPartyId || null;
   const winnerAllianceId = status === 'completed' ? getWinnerAllianceId(winnerId) : null;
   
+  // Calculate alliance aggregation if votes exist
+  const allianceVotes = calculateAllianceVotes(partyVotes);
+  
   const resultDoc = {
-    constituencyId: actualDocId,  // Use the actual document ID we decided on
+    constituencyId: actualDocId,
     partyVotes,
     allianceVotes,
-    winnerPartyId: winnerId, // Always show current leader, regardless of status
+    winnerPartyId: winnerId,
     winnerAllianceId,
     winnerCandidateId: null,
     totalVotes,
-    margin,
-    marginPercentage,
+    margin: 0,
+    marginPercentage: 0,
     status,
     updatedAt: serverTimestamp(),
     updatedBy: adminUid,
