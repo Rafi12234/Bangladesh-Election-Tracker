@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import Script from 'next/script';
 import { Analytics } from '@vercel/analytics/react';
+import VictoryPopup from '@/components/VictoryPopup';
 import './globals.css';
 
 // @next/next/no-page-custom-font - Ignored: Using next/font/google which is optimized for App Router
@@ -60,6 +61,7 @@ export default function RootLayout({
         <link rel="preconnect" href="https://firebase.googleapis.com" crossOrigin="anonymous" />
       </head>
       <body className="min-h-screen bg-white dark:bg-slate-950 transition-colors duration-200 font-sans antialiased">
+        <VictoryPopup />
         {children}
         
         {/* ANALYTICS: Vercel Web Analytics - tracks Core Web Vitals */}
