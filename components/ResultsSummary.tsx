@@ -39,6 +39,7 @@ function ResultsSummary({ summary, seatCounts, allianceSeatCounts }: Props) {
   }, [allianceSeatCounts]);
 
   // Keep 'others' separately for optional display
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const othersAlliance = useMemo(() => {
     return allianceSeatCounts.find(a => a.allianceId === 'others');
   }, [allianceSeatCounts]);
