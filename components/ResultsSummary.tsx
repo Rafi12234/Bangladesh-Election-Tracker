@@ -20,19 +20,27 @@ function ResultsSummary({ summary, seatCounts, allianceSeatCounts }: Props) {
   const { TOTAL_SEATS, MAJORITY_SEATS } = ELECTION_CONFIG;
 
   // Sort alliances by seats first, then by vote percentage
+  // Filter out 'others' from main display — only show actual alliances
   const sortedAlliances = useMemo(() => {
-    return [...allianceSeatCounts].sort((a, b) => {
-      // Sort by total seats (declared + leading) first
-      const aTotal = a.seats + a.leadingSeats;
-      const bTotal = b.seats + b.leadingSeats;
-      if (aTotal !== bTotal) return bTotal - aTotal;
-      
-      // Then by declared seats
-      if (a.seats !== b.seats) return b.seats - a.seats;
-      
-      // Finally by vote percentage
-      return b.votePercentage - a.votePercentage;
-    });
+    return [...allianceSeatCounts]
+      .filter(a => a.allianceId !== 'others' && (a.seats > 0 || a.leadingSeats > 0 || a.totalVotes > 0))
+      .sort((a, b) => {
+        // Sort by total seats (declared + leading) first
+        const aTotal = a.seats + a.leadingSeats;
+        const bTotal = b.seats + b.leadingSeats;
+        if (aTotal !== bTotal) return bTotal - aTotal;
+        
+        // Then by declared seats
+        if (a.seats !== b.seats) return b.seats - a.seats;
+        
+        // Finally by vote percentage
+        return b.votePercentage - a.votePercentage;
+      });
+  }, [allianceSeatCounts]);
+
+  // Keep 'others' separately for optional display
+  const othersAlliance = useMemo(() => {
+    return allianceSeatCounts.find(a => a.allianceId === 'others');
   }, [allianceSeatCounts]);
 
   // Check if there's a winner (alliance or party with >= 151 seats)
