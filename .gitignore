@@ -38,6 +38,9 @@ debug.js
 test.js
 test.html
 tmpclaude-*
+
+# old nested folder
+Bangladesh-Election-Tracker-Version-2-master/
 *.local
 
 # IDE
